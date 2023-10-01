@@ -2,7 +2,7 @@
   <img width="250" src="https://github.com/MegalithOffical/hexml/blob/main/images/hexml-logo-nobackground.png">
 </p>
 
-<center># HexML 📜<center>
+<center> <h1> HexML 📜</h1> <center>
 
 HexML is a lightweight data serialization format designed for human readability and ease of use. It provides a simple and intuitive way to represent structured data with support for various data types.
 
