@@ -1,0 +1,33 @@
+{
+  "name": "hexml",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "Simple and Lightweight human-readable data-serialization language.",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node tests/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MegalithOffical/hexml.git"
+  },
+  "keywords": [
+    "datastorage",
+    "storage",
+    "json",
+    "encoding",
+    "decoing",
+    "hex",
+    "binary",
+    "base64"
+  ],
+  "author": "MegalithOffical",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/MegalithOffical/hexml/issues"
+  },
+  "homepage": "https://github.com/MegalithOffical/hexml#readme",
+  "dependencies": {
+    "clog-utils": "^1.1.1"
+  }
+}
