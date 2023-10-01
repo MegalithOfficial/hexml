@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="250" src="https://github.com/MegalithOffical/hexml/blob/main/images/hexml-logo.jpg">
+  <img width="250" src="https://github.com/MegalithOffical/hexml/blob/main/images/hexml-logo-nobackground.png">
 </p>
 
 # HexML 📜
