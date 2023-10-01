@@ -1,4 +1,6 @@
-![](https://github.com/MegalithOffical/hexml/blob/main/images/hexml-logo.jpg)
+<p align="center">
+  <img width="460" height="300" src="https://picsum.photos/460/300](https://github.com/MegalithOffical/hexml/blob/main/images/hexml-logo.jpg">
+</p>
 # HexML 📜
 
 HexML is a lightweight data serialization format designed for human readability and ease of use. It provides a simple and intuitive way to represent structured data with support for various data types.
