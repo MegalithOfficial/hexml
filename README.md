@@ -42,8 +42,8 @@ age: 30;
 isStudent: true;
 gradeArray: <[95, 88, 76]>;
 address: <{
-  street: "123 Main St",
-  city: "Cityville"
+  street: "123 Main St";
+  city: "Cityville";
 }>;
 sum: {10 + 5};
 product: {2 * 3};

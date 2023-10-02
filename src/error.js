@@ -6,8 +6,8 @@ class BaseError extends Error {
   };
 };
 
-class InvalidArgument extends BaseError {};
+class InvalidArgument extends BaseError { };
 
-class EvaluationError extends BaseError {};
+class EvaluationError extends BaseError { };
 
 module.exports = { InvalidArgument, EvaluationError };
