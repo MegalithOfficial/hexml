@@ -55,14 +55,20 @@ module.exports = class Hexml {
                     if (dateString.toLowerCase() === "now") result[key] = Date.now();
                     else {
                         const dateValue = new Date(dateString);
-                        result[key] = dateValue;
+                        result[key] = dateValue.getTime();
                     }
                 } catch (error) {
                     return logger.error(new EvaluationError(`Error parsing date for key "${key}": ${error.message}`));
                 };
-            } else if (value.startsWith('{') && value.endsWith('}')) {
-                const expression = value.substring(1, value.length - 1);
-
+            } else if (value.startsWith("$")) {
+                const requestedValue = value.replace("$", "");
+                try {
+                    result[key] = (result[requestedValue]);
+                } catch (error) {
+                    return logger.error(new EvaluationError(`Error evaluating expression for key "${key}": ${error.message}`));
+                };
+            } else if (value.startsWith('m{') && value.endsWith('}')) {
+                const expression = value.substring(2, value.length - 1);
                 try {
                     const evaluatedValue = Function("return " + expression)();
                     result[key] = evaluatedValue;
@@ -116,35 +122,99 @@ module.exports = class Hexml {
                         result[key] = arrayValues;
                         break;
                     case value.startsWith('<{') && value.endsWith('}>'):
-                        const ArraysanitizedValue = value.slice(1, -1).replace(/<\[(.*?)\]>/g, '[$1]');
-                        const sanitizedValue = ArraysanitizedValue.replace(/</g, '{').replace(/>/g, '}');
-                        let rawparsedObj = convertToQuotedProperties(`${sanitizedValue}`);
+                        let ArraysanitizedValue = value.slice(1, -1).replace(/<\[(.*?)\]>/g, '[$1]');
+
+                        const timeExpression = value.substring(1, value.length - 1);
+                        const timeRegex = /<Date\("([^"]+)"\)>/g;
+                        const matchesTime = [];
+                        let matchTime;
+
+                        while ((matchTime = timeRegex.exec(timeExpression)) !== null) {
+                            matchesTime.push({ key: matchTime[0], timeParameter: matchTime[1] });
+                        }
+
+                        for (let i = 0; i < matchesTime.length; i++) {
+                            const dateString = matchesTime[i];
+                            try {
+                                if (dateString.timeParameter.toLowerCase() === "now") ArraysanitizedValue = ArraysanitizedValue.replace(dateString.key, Date.now());
+                                else {
+                                    const dateValue = new Date(dateString.timeParameter);
+                                    ArraysanitizedValue = ArraysanitizedValue.replace(dateString.key, dateValue.getTime());
+                                }
+                            } catch (error) {
+                                return logger.error(new EvaluationError(`Error parsing date for key "${key}": ${error.message}`));
+                            };
+                        }
+
+                        const Mathregex = /m{[^{}]*}/g;
+                        const Mathmatches = ArraysanitizedValue.match(Mathregex) || [];
+
+                        const keyRegexPattern = /(\w+):\s*m{[^{}]+}/g;
+                        const keysArray = [];
+                        const keyMatches = ArraysanitizedValue.match(keyRegexPattern);
+
+                        if (keyMatches) {
+                            for (const match of keyMatches) {
+                                const key = match.match(/(\w+):/)[1].trim();
+                                keysArray.push(key);
+                            }
+                        }
+
+                        for (let i = 0; i < Mathmatches.length; i++) {
+                            const expression = Mathmatches[i].substring(2, value.length - 1).replace(/{/g, '').replace(/}/g, '');
+                            try {
+                                const evaluatedValue = Function("return " + expression)();
+                                result[key + keysArray[i]] = evaluatedValue;
+                                ArraysanitizedValue = ArraysanitizedValue.replace(Mathmatches[i], evaluatedValue);
+                            } catch (error) {
+                                return logger.error(new EvaluationError(`Error evaluating expression for key "${key}": ${error.message}`));
+                            };
+                        }
+
+                        const dollarSignRegex = /\$[^\s$]+/g;
+                        const ReplaceMatches = ArraysanitizedValue.match(dollarSignRegex) || [];
+
+                        for (let i = 0; i < ReplaceMatches.length; i++) {
+                            const requestedValue = ReplaceMatches[i].replace("$", "").replace(/,/g, "");
+
+                            try {
+                                const key = requestedValue;
+                                result[key] = result[requestedValue];
+                                ArraysanitizedValue = ArraysanitizedValue.replace(`$${requestedValue}`, typeof result[requestedValue] === "string" ? `"${result[requestedValue]}"` : result[requestedValue]);
+                            } catch (error) {
+                                return logger.error(new EvaluationError(`Error evaluating expression for key "${key}": ${error.message}`));
+                            }
+                        }
+
+                        let rawparsedObj = convertToQuotedProperties(`${ArraysanitizedValue}`);
 
                         const mathOperatorExpression = value.substring(1, value.length - 1);
                         const regex = /=\{(.*?)\}/g;
-                        const matches = [];
-                        let match;
+                        const matchesMath = [];
+                        let matchMath;
 
-                        while ((match = regex.exec(mathOperatorExpression)) !== null) {
-                            matches.push(match[0]);
+                        while ((matchMath = regex.exec(mathOperatorExpression)) !== null) {
+                            matchesMath.push(matchMath[0]);
                         }
 
-                        for (let i = 0; i < matches.length; i++) {
-                            const expression = matches[i].substring(2, value.length - 1).replace(/{/g, '').replace(/}/g, '');
+                        for (let i = 0; i < matchesMath.length; i++) {
+                            const expression = matchesMath[i].substring(2, value.length - 1).replace(/{/g, '').replace(/}/g, '');
                             const splitter = expression.split(" ");
 
                             const operators = ["+", "-", "/", "*", "%%", "%"];
                             let Mathexpression = splitter.map(item =>
-                                operators.some(op => item.startsWith(op)) ? item : result[item] ? result[item] : logger.error(new EvaluationError(`Error evaluating expression for key "${key}": ${item} is not defined`))
+                                operators.some(op => item.startsWith(op)) ? item : result[item] ? result[item] : result[key + item] ?? logger.error(new EvaluationError(`Error evaluating expression for key "${key}": ${item} is not defined`))
                             ).join('');
 
                             try {
                                 const evaluatedValue = Function("return " + Mathexpression)();
-                                rawparsedObj  = rawparsedObj.replace(matches[i], evaluatedValue);
+                                rawparsedObj = rawparsedObj.replace(matchesMath[i], evaluatedValue);
                             } catch (error) {
                                 logger.error(new EvaluationError(error))
                             };
                         }
+
+                        console.log(rawparsedObj)
 
                         try {
                             const parsedValue = JSON.parse(rawparsedObj);
